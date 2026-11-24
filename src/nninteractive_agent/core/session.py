@@ -118,16 +118,29 @@ def _make_remote(url: str, wait_seconds: float = 120.0):
             delay = min(delay * 1.5, 20.0)
 
 
+def pick_device():
+    """``$NNINTERACTIVE_DEVICE`` if set, else CUDA, else Apple MPS, else the CPU."""
+    import torch
+
+    name = os.environ.get("NNINTERACTIVE_DEVICE")
+    if name:
+        return torch.device(name)
+    if torch.cuda.is_available():
+        return torch.device("cuda:0")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def _make_local(model_id: str | None):
     try:
-        import torch
         from nnInteractive.inference.inference_session import nnInteractiveInferenceSession
         from nnInteractive.model_management import ensure_model_available, get_default_model_id
     except ImportError as e:
         raise RuntimeError(f"{LOCAL_HINT} ({e})") from e
 
     folder = ensure_model_available(model_id or get_default_model_id())
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = pick_device()
     session = nnInteractiveInferenceSession(
         device=device, use_torch_compile=False, torch_n_threads=os.cpu_count() or 8, verbose=False
     )

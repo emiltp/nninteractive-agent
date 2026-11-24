@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 from .core.pyguard import PYTHON_MODES, describe
-from .core.session import LOCAL_HINT, probe, resolve_spec
+from .core.session import LOCAL_HINT, pick_device, probe, resolve_spec
 from .skill import PLUGIN_TOOL_PREFIX, SKILL_DIR, SKILL_NAME, VERIFIER_FILE
 
 NAME = "nninteractive"
@@ -44,13 +44,13 @@ def prepare_inference(spec: str) -> None:
     report the model's license."""
     if spec.startswith("local"):
         try:
-            import torch
+            device = pick_device()
         except ImportError as e:
             sys.exit(f"{LOCAL_HINT}\n({e})")
-        if torch.cuda.is_available():
-            print(f"nnInteractive: local inference on {torch.cuda.get_device_name(0)}")
+        if device.type == "cpu":
+            print("nnInteractive: local inference on the CPU: this works, but each prompt is slow")
         else:
-            print("nnInteractive: local inference on the CPU (no CUDA GPU found): this works, but each prompt is slow")
+            print(f"nnInteractive: local inference on {device}")
         print("nnInteractive: getting the weights ...", flush=True)
     else:
         print(f"nnInteractive: connecting to {spec} ...", flush=True)

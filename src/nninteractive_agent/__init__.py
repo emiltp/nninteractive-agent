@@ -8,7 +8,12 @@ The package is split so the core never imports Qt or napari:
 * ``mcp_server``: serves the tools over stdio MCP for Claude Code.
 """
 
+import os
 from importlib.metadata import PackageNotFoundError, version
+
+# Apple GPUs: PyTorch has no adaptive_avg_pool3d on MPS (nnInteractive's AutoZoom uses it), so let it run
+# on the CPU. PyTorch reads this when it is imported, so it has to be set here, before that.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 try:
     __version__ = version("nninteractive-agent")
